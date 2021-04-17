@@ -1,0 +1,185 @@
+---
+title: "Reproducable research project 1 2021"
+author: "Guy Mathys"
+date: "16-4-2021"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+# Loading and preprocessing the data
+
+## Read data
+```{r ,echo = TRUE}
+library(plyr)
+library(ggplot2)
+library(chron)
+
+if (dir.exists ("C:/Users/Aureus/Documents/R/Data/DataScienceReproRes"))  {   
+  setwd ("C:/Users/Aureus/Documents/R/Data/DataScienceReproRes") }
+
+unzip("activity.zip")
+data_raw <- read.csv("activity.csv")
+data <- na.omit(data_raw)     
+
+```
+## mean total number of steps taken per day
+```{r,echo = TRUE }
+
+n_steps_total <- sum(data$steps)
+n_steps_by_day <- aggregate(x= data$steps,
+                            by= list(data$date),
+                            FUN=sum)
+
+hist(n_steps_by_day$x,
+     main="Steps by day",
+     xlab="steps",
+     ylab = "days",
+     col="blue")
+
+```
+Mean steps by day
+```{r,echo = TRUE }
+
+mean_1 <- mean(n_steps_by_day$x)
+print(mean_1)
+
+```
+Median steps by day
+```{r,echo = TRUE }
+median_1 <- median(n_steps_by_day$x)
+print(median_1)
+
+
+```
+# average daily activity pattern
+## time series plot
+```{r,echo = TRUE }
+theme_set(theme_light())
+n_steps_by_interval <- aggregate(x= data$steps,
+                                 by= list(data$interval),
+                                 FUN=mean)
+colnames(n_steps_by_interval) <- c("interval", "steps")
+ggplot(n_steps_by_interval, aes(x=interval)) +
+  geom_line(aes(y=steps))
+
+```
+## The 5-minute interval that, on average, contains the maximum number of steps
+```{r,echo = TRUE }
+print ( n_steps_by_interval[which.max(n_steps_by_interval$steps),])
+
+```
+# Imputing missing values
+
+total number of missing values in the dataset 
+```{r,echo = TRUE }
+
+print(nrow(data_raw) - nrow(data))
+
+data_new <- data_raw
+
+```
+## new dataset
+
+Strategy: The missing data (NA) is replaced by the mean of that interval over all days.
+```{r,echo = TRUE }
+range_1 <- 1: length(n_steps_by_interval$interval)
+range_2 <- 1 : length(data_new$interval)
+
+for (i1 in range_1)
+{
+  for(i2 in range_2)
+  {
+    if (n_steps_by_interval$interval[i1] == data_new$interval[i2])
+    {
+     if( is.na(data_new$steps[i2]))
+      {
+        data_new$steps[i2] <- n_steps_by_interval$steps[i1]
+             }
+      
+    }
+  }
+}
+
+
+n_steps_total_new <- sum(data_new$steps)
+n_steps_by_day_new <- aggregate(x= data_new$steps,
+                            by= list(data_new$date),
+                            FUN=sum)
+
+hist(n_steps_by_day_new$x,
+     main="Steps by day",
+     xlab="steps",
+     ylab = "days",
+     col="darkmagenta")
+
+
+```
+Mean steps by day
+```{r,echo = TRUE }
+mean_new <- mean(n_steps_by_day_new$x)
+print(mean_new)
+print ("difference")
+print (mean_1 - mean_new)
+
+```
+Median steps by day
+```{r,echo = TRUE }
+median_new <- median(n_steps_by_day_new$x)
+print ("difference")
+print(median_1 - median_new)
+
+```
+
+# differences in activity patterns between weekdays and weekends
+```{r,echo = TRUE }
+#data_new$day <-  weekdays( as.Date(data_new$date))    
+
+weekdays1 <- c('Monday', 'Tuesday', 'Wednesday', 'Thursday','Friday','maandag','dinsdag','woensdag','donderdag','vrijdag')
+data_new$day <- weekdays( as.Date(data_new$date))
+data_new$day <- c('weekend', 'weekday')[(weekdays( as.Date(data_new$date)) %in% weekdays1)+1L]
+
+week1 <- data_new$day == "weekend"
+data_weekend <- data_new[week1,]
+week2 <- data_new$day == "weekday"
+data_week <- data_new[week2,]
+
+
+
+```
+
+## weekend
+```{r,echo = TRUE }
+
+
+  theme_set(theme_light())
+  n_steps_by_interval <- aggregate(x= data_weekend$steps,
+                                   by= list(data_weekend$interval),
+                                   FUN=mean)
+  colnames(n_steps_by_interval) <- c("interval", "steps")
+  ggplot(n_steps_by_interval, aes(x=interval)) +
+    geom_line(aes(y=steps))
+  
+ 
+```
+
+### weekday
+```{r,echo = TRUE } 
+  n_steps_by_interval <- aggregate(x= data_week$steps,
+                                   by= list(data_week$interval),
+                                   FUN=mean)
+  colnames(n_steps_by_interval) <- c("interval", "steps")
+  ggplot(n_steps_by_interval, aes(x=interval)) +
+    geom_line(aes(y=steps))
+  
+  
+  
+
+```
+
+
+
+
+
+
